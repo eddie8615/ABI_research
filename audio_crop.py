@@ -3,9 +3,6 @@ import os
 from pydub import AudioSegment
 import pandas as pd
 
-arouse_path = os.path.relpath('./MSP Data/Annotations/Annotations/Arousal/MSP-Conversation_0021_1_001.csv')
-dominance_path = os.path.relpath('./MSP Data/Annotations/Annotations/Dominance')
-valence_path = os.path.relpath('./MSP Data/Annotations/Annotations/Valence')
 train_path = os.path.relpath('./Data/train')
 validation_path = os.path.relpath('./Data/validation')
 test_path = os.path.relpath('./Data/test')
@@ -13,15 +10,15 @@ test_path = os.path.relpath('./Data/test')
 
 def main():
     labels = file_labels()
-    data = pd.read_csv(arouse_path, header=8, names=['time', 'arousal'])
-    print(data.head())
+
     # audio_partition()
-    # audio_segment(labels)
+    audio_segment(labels)
 
 
 def audio_segment(labels):
     path = os.path.relpath('./MSP Data/Time Labels/segments.json')
     part_path = os.path.relpath('./Data/partition/')
+
 
     f = open(path, 'r')
     timing_data = json.load(f)
@@ -32,20 +29,27 @@ def audio_segment(labels):
 
         if timing_data[key]['Conversation_Part'][0:21] in labels[0]:
             save_path = os.path.join(train_path, key+'.wav')
-            save_y = os.path.join(train_path, key+'.csv')
+            # train = pd.concat([train, integrated], axis=0)
         elif timing_data[key]['Conversation_Part'][0:21] in labels[1]:
             save_path = os.path.join(validation_path, key+'.wav')
-            save_y = os.path.join(train_path, key + '.csv')
+            # validation = pd.concat([validation, integrated], axis=0)
         else:
             save_path = os.path.join(test_path, key+'.wav')
-            save_y = os.path.join(train_path, key + '.csv')
+            # test = pd.concat([test, integrated], axis=0)
 
         audio_file = timing_data[key]['Conversation_Part'] + '.wav'
         audio_file = os.path.join(part_path, audio_file)
         file = AudioSegment.from_wav(audio_file)
         sliced = file[start_time:end_time]
         sliced.export(save_path, format="wav")
-        arouse = pd.read_csv()
+
+    # train_csv = os.path.join(data_path, 'train.csv')
+    # valid_csv = os.path.join(data_path, 'validation.csv')
+    # test_csv = os.path.join(data_path, 'test.csv')
+    #
+    # train.to_csv(train_csv)
+    # test.to_csv(test_csv)
+    # validation.to_csv(valid_csv)
 
 
 def audio_partition():
