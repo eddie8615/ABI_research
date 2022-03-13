@@ -11,15 +11,13 @@ test_path = os.path.relpath('./Data/test')
 def main():
     labels = file_labels()
 
-    # audio_partition()
+    audio_partition()
     audio_segment(labels)
 
 
 def audio_segment(labels):
     path = os.path.relpath('./MSP Data/Time Labels/segments.json')
     part_path = os.path.relpath('./Data/partition/')
-
-
     f = open(path, 'r')
     timing_data = json.load(f)
 
@@ -64,8 +62,9 @@ def audio_partition():
         elem = line.strip().split(';')
         file_name = elem[0]+'.wav'
         save_path = os.path.join(part_path, file_name)
-        start_time = float(elem[1]) * 1000
-        end_time = float(elem[2]) * 1000
+        offset = float(elem[1])
+        start_time = (float(elem[1]) - offset) * 1000
+        end_time = (float(elem[2]) - offset) * 1000
         audio_file = os.path.join(audio_path, elem[0][0:21]+'.wav')
         file = AudioSegment.from_wav(audio_file)
         sliced = file[start_time:end_time]
