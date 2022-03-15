@@ -6,9 +6,9 @@ import opensmile
 
 
 # save paths
-arouse_path = os.path.relpath('./MSP Data/Annotations/Annotations/Arousal')
-dominance_path = os.path.relpath('./MSP Data/Annotations/Annotations/Dominance')
-valence_path = os.path.relpath('./MSP Data/Annotations/Annotations/Valence')
+arouse_path = os.path.relpath('./MSP Data/Annotations/Arousal')
+dominance_path = os.path.relpath('./MSP Data/Annotations/Dominance')
+valence_path = os.path.relpath('./MSP Data/Annotations/Valence')
 train_path = os.path.relpath('./Data/train')
 validation_path = os.path.relpath('./Data/validation')
 test_path = os.path.relpath('./Data/test')
@@ -23,10 +23,10 @@ def main():
         num_workers=4
     )
 
-    # annotations = get_annotations('train')
-    # extract_features(smile, annotations, 'train')
-    # annotations = get_annotations('validation')
-    # extract_features(smile, annotations, 'validation')
+    annotations = get_annotations('train')
+    extract_features(smile, annotations, 'train')
+    annotations = get_annotations('validation')
+    extract_features(smile, annotations, 'validation')
     annotations = get_annotations('test')
     extract_features(smile, annotations, 'test')
 
