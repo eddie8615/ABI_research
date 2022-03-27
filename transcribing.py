@@ -12,6 +12,7 @@ validation_path = os.path.relpath('./Data/validation')
 train_write_path = os.path.relpath('./transcripts/train')
 test_write_path = os.path.relpath('./transcripts/test')
 validation_write_path = os.path.relpath('./transcripts/validation')
+failed_path = os.path.relpath('./failed.txt')
 save_path = os.path.relpath('.')
 bucket_name = 'msc_research'
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/changhyun/workspace/ABI_research/config/config.json"
@@ -22,12 +23,12 @@ def main():
     test_long_files, test_short_files = find_long_audios(test_path)
     validation_long_files, validation_short_files = find_long_audios(validation_path)
 
-    # print('Training files transcribing...')
-    # transcribe(train_path, train_write_path, train_long_files, train_short_files)
+    print('Training files transcribing...')
+    transcribe(train_path, train_write_path, train_long_files, train_short_files)
     # print('Testing files transcribing...')
     # transcribe(test_path, test_write_path, test_long_files, test_short_files)
-    print('Validation files transcribing...')
-    transcribe(validation_path, validation_write_path, validation_long_files, validation_short_files)
+    # print('Validation files transcribing...')
+    # transcribe(validation_path, validation_write_path, validation_long_files, validation_short_files)
 
 
 def transcribe(path, write_path, long_files, short_files):
@@ -36,6 +37,12 @@ def transcribe(path, write_path, long_files, short_files):
     for file in long_files:
         file_name = os.path.join(path, file)
         transcript, confidence = long_transcribe(file_name)
+        if confidence == 0:
+            print("Failed to transcribe:", file_name)
+            fi = open(failed_path, "a")
+            fi.write(file_name+'\n')
+            fi.close()
+
         long_confidences.append(confidence)
         new_path = os.path.join(write_path, file[0:21] + '.txt')
         write_transcripts(new_path, transcript)
@@ -45,6 +52,12 @@ def transcribe(path, write_path, long_files, short_files):
     for file in short_files:
         file_name = os.path.join(path, file)
         transcript, confidence = short_transcribe(file_name)
+        if confidence == 0:
+            print("Failed to transcribe:", file_name)
+            fi = open(failed_path, "a")
+            fi.write(file_name + '\n')
+            fi.close()
+
         short_confidences.append(confidence)
         new_path = os.path.join(write_path, file[0:21] + '.txt')
         write_transcripts(new_path, transcript)
@@ -120,8 +133,6 @@ def short_transcribe(audio_file_name):
     for result in response.results:
         transcript += result.alternatives[0].transcript
         confidences.append(result.alternatives[0].confidence)
-    if mean(confidences) == 0:
-        print(audio_file_name)
 
     return transcript, mean(confidences)
 
