@@ -23,12 +23,12 @@ def main():
     test_long_files, test_short_files = find_long_audios(test_path)
     validation_long_files, validation_short_files = find_long_audios(validation_path)
 
-    # print('Training files transcribing...')
-    # transcribe(train_path, train_write_path, train_long_files, train_short_files)
+    print('Training files transcribing...')
+    transcribe(train_path, train_write_path, train_long_files, train_short_files)
     print('Testing files transcribing...')
     transcribe(test_path, test_write_path, test_long_files, test_short_files)
-    # print('Validation files transcribing...')
-    # transcribe(validation_path, validation_write_path, validation_long_files, validation_short_files)
+    print('Validation files transcribing...')
+    transcribe(validation_path, validation_write_path, validation_long_files, validation_short_files)
 
 
 def transcribe(path, write_path, long_files, short_files):

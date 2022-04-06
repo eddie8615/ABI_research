@@ -58,11 +58,16 @@ def audio_partition():
     with open(path) as f:
         lines = f.readlines()
 
+    prev = ''
     for line in lines:
         elem = line.strip().split(';')
         file_name = elem[0]+'.wav'
+        audio = elem[0][0:21]
+
+        if prev != audio:
+            prev = audio
+            offset = float(elem[1])
         save_path = os.path.join(part_path, file_name)
-        offset = float(elem[1])
         start_time = (float(elem[1]) - offset) * 1000
         end_time = (float(elem[2]) - offset) * 1000
         audio_file = os.path.join(audio_path, elem[0][0:21]+'.wav')
