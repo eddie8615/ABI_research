@@ -1,18 +1,18 @@
 import os
 import json
 import pandas as pd
-from audio_crop import file_labels
+from util.audio_crop import file_labels
 import opensmile
 
 
 # save paths
-arouse_path = os.path.relpath('./MSP Data/Annotations/Arousal')
-dominance_path = os.path.relpath('./MSP Data/Annotations/Dominance')
-valence_path = os.path.relpath('./MSP Data/Annotations/Valence')
-train_path = os.path.relpath('./Data/train')
-validation_path = os.path.relpath('./Data/validation')
-test_path = os.path.relpath('./Data/test')
-data_path = os.path.relpath('./Data')
+arouse_path = os.path.relpath('../MSP Data/Annotations/Arousal')
+dominance_path = os.path.relpath('../MSP Data/Annotations/Dominance')
+valence_path = os.path.relpath('../MSP Data/Annotations/Valence')
+train_path = os.path.relpath('../Data/train')
+validation_path = os.path.relpath('../Data/validation')
+test_path = os.path.relpath('../Data/test')
+data_path = os.path.relpath('../Data')
 
 
 def main():
@@ -68,7 +68,7 @@ def extract_features(smile, annotations, phase=None):
 
     data['podcast'] = indices
     data = data.set_index('podcast')
-    segment_path = os.path.relpath('./MSP Data/Time Labels/segments.json')
+    segment_path = os.path.relpath('../MSP Data/Time Labels/segments.json')
     f = open(segment_path, 'r')
     timing_data = json.load(f)
     for key in timing_data:

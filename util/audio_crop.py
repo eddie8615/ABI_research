@@ -3,9 +3,9 @@ import os
 from pydub import AudioSegment
 import pandas as pd
 
-train_path = os.path.relpath('./Data/train')
-validation_path = os.path.relpath('./Data/validation')
-test_path = os.path.relpath('./Data/test')
+train_path = os.path.relpath('../Data/train')
+validation_path = os.path.relpath('../Data/validation')
+test_path = os.path.relpath('../Data/test')
 
 
 def main():
@@ -16,8 +16,8 @@ def main():
 
 
 def audio_segment(labels):
-    path = os.path.relpath('./MSP Data/Time Labels/segments.json')
-    part_path = os.path.relpath('./Data/partition/')
+    path = os.path.relpath('../MSP Data/Time Labels/segments.json')
+    part_path = os.path.relpath('../Data/partition/')
     f = open(path, 'r')
     timing_data = json.load(f)
 
@@ -51,9 +51,9 @@ def audio_segment(labels):
 
 
 def audio_partition():
-    path = os.path.relpath('./MSP Data/Time Labels/conversation_parts.txt')
-    part_path = os.path.relpath('./Data/partition/')
-    audio_path = os.path.relpath('./MSP Data/Audio')
+    path = os.path.relpath('../MSP Data/Time Labels/conversation_parts.txt')
+    part_path = os.path.relpath('../Data/partition/')
+    audio_path = os.path.relpath('../MSP Data/Audio')
 
     with open(path) as f:
         lines = f.readlines()
@@ -77,7 +77,7 @@ def audio_partition():
 
 
 def file_labels():
-    filepath = os.path.relpath('./MSP Data/partitions.txt')
+    filepath = os.path.relpath('../MSP Data/partitions.txt')
     with open(filepath, 'r') as f:
         lines = f.readlines()
 

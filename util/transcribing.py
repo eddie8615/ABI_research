@@ -6,14 +6,14 @@ from pydub import AudioSegment
 from tqdm import tqdm
 from google.cloud import storage
 
-train_path = os.path.relpath('./Data/train/')
-test_path = os.path.relpath('./Data/test')
-validation_path = os.path.relpath('./Data/validation')
-train_write_path = os.path.relpath('./transcripts/train')
-test_write_path = os.path.relpath('./transcripts/test')
-validation_write_path = os.path.relpath('./transcripts/validation')
-failed_path = os.path.relpath('./failed.txt')
-save_path = os.path.relpath('.')
+train_path = os.path.relpath('../Data/train/')
+test_path = os.path.relpath('../Data/test')
+validation_path = os.path.relpath('../Data/validation')
+train_write_path = os.path.relpath('../transcripts/train')
+test_write_path = os.path.relpath('../transcripts/test')
+validation_write_path = os.path.relpath('../transcripts/validation')
+failed_path = os.path.relpath('../failed.txt')
+save_path = os.path.relpath('..')
 bucket_name = 'msc_research'
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/changhyun/workspace/ABI_research/config/config.json"
 
