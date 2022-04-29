@@ -21,6 +21,7 @@ if not os.path.exists(output_folder):
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
     feature_level=opensmile.FeatureLevel.LowLevelDescriptors,
+
     num_workers=4
 )
 
@@ -37,8 +38,7 @@ for section in sections:
         instname = os.path.splitext(audio)[0]
         outfilename = section_output_folder + instname + '.csv'
         signal, sampling_rate = audiofile.read(filename, always_2d=True)
-
         data = smile.process_signal(signal, sampling_rate)
-        data.to_csv(outfilename)
+        # data.to_csv(outfilename)
 
     print('Ending extraction of ' + section + ' files...')
