@@ -1,7 +1,7 @@
 import os
 import json
 import pandas as pd
-from util.audio_crop import file_labels
+from audio_crop import file_labels
 import opensmile
 
 
