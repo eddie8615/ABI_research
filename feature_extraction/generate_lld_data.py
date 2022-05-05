@@ -27,7 +27,10 @@ def main():
         os.mkdir(output_path)
     if not os.path.exists(label_output_path):
         os.mkdir(label_output_path)
-    load_features()
+    # load_features()
+    loaded = np.loadtxt('../Functional_features/train.txt')
+    loaded = loaded.reshape((25253, 399, 25))
+    print(loaded[0])
 
 
 def load_features():
@@ -41,6 +44,9 @@ def load_features():
     for i, folder in enumerate(folder_lld_features):
         # Initialise feature and label space for each partition
         features = []
+        train = []
+        validation = []
+        test = []
         annotations = get_annotations(sections[i])
 
         arousal_label = []
@@ -64,16 +70,30 @@ def load_features():
                     end = last_timestamp
 
                 features.append(get_features(start, end, x))
-                arousal, valence, dominance = get_labels(start, end, annotations, file)
-                arousal_label.append(arousal)
-                valence_label.append(valence)
-                dominance_label.append(dominance)
+                # arousal, valence, dominance = get_labels(start, end, annotations, file)
+                # arousal_label.append(arousal)
+                # valence_label.append(valence)
+                # dominance_label.append(dominance)
                 # print(window)
-        print(np.asarray(features).shape)
-        save_features(np.asarray(features), output_path + sections[i] + '.txt')
-        di = {'Arousal': arousal_label, 'Valence': valence_label, 'Dominance': dominance_label}
-        df = pd.DataFrame(di)
-        save_labels(df, output_path + sections[i] + '_labels.txt')
+        if i == 0:
+            train = features
+        elif i == 1:
+            validation = features
+        else:
+            test = features
+    print('Train shape:', train.shape)
+    print('Validation shape:', validation.shape)
+    print('Test shape:', test.shape)
+
+    return train, validation, test
+
+        # Generate features just in case
+        # save_features(np.asarray(features), output_path + sections[i] + '.txt')
+        # di = {'Arousal': arousal_label, 'Valence': valence_label, 'Dominance': dominance_label}
+        # df = pd.DataFrame(di)
+
+        # Generate the labels
+        # save_labels(df, output_path + sections[i] + '_labels.txt')
 #         TODO rather than saving the extracted features in csv file, this function will be modified to return extracted features when called, but will keep label values as csv file.
 # Later, this function is called to load features to train RNN-LSTM, and labels will be loaded through saved csv file
 #
