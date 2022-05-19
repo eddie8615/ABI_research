@@ -1,7 +1,9 @@
 import os
 import json
 import pandas as pd
+import numpy as np
 from audio_crop import file_labels
+from tqdm import tqdm
 import opensmile
 
 
@@ -14,7 +16,7 @@ validation_path = os.path.relpath('../Data/validation')
 test_path = os.path.relpath('../Data/test')
 data_path = os.path.relpath('../Data')
 
-
+labels_path = '../Data/Labels/'
 def main():
 
     smile = opensmile.Smile(
@@ -22,13 +24,19 @@ def main():
         feature_level=opensmile.FeatureLevel.Functionals,
         num_workers=4
     )
+    if not os.path.exists(labels_path):
+        os.mkdir(labels_path)
 
-    annotations = get_annotations('train')
-    extract_features(smile, annotations, 'train')
-    annotations = get_annotations('validation')
-    extract_features(smile, annotations, 'validation')
-    annotations = get_annotations('test')
-    extract_features(smile, annotations, 'test')
+    annotations = get_annotations()
+    extract_labels(annotations)
+
+    # extract_features(smile, annotations, 'train')
+
+    # annotations = get_annotations('validation')
+
+    # extract_features(smile, annotations, 'validation')
+    # annotations = get_annotations('test')
+    # extract_features(smile, annotations, 'test')
 
 
 def extract_features(smile, annotations, phase=None):
@@ -124,8 +132,72 @@ def extract_features(smile, annotations, phase=None):
     print('Data dimension: ', data.shape)
 
 
-def get_annotations(data_phase='train'):
+def extract_labels(annotations):
+    segment_path = os.path.relpath('../MSP Data/Time Labels/segments.json')
+    f = open(segment_path, 'r')
+    timing_data = json.load(f)
     train_files, validation_files, test_files = file_labels()
+    partitions = {'train': train_files, 'validation': validation_files, 'test': test_files}
+
+    for partition in partitions:
+        partition_files = partitions.get(partition)
+        files = []
+        arousal = []
+        valence = []
+        dominance = []
+        for key in tqdm(timing_data):
+            conv_part = timing_data[key]['Conversation_Part']
+            start = timing_data[key]['Start_Time']
+            end = timing_data[key]['End_Time']
+
+            if start == end or conv_part[:21] not in partition_files:
+                continue
+
+            arousal_temp = []
+            valence_temp = []
+            dominance_temp = []
+            files.append(key)
+
+            a_annotations = annotations[0].get(conv_part)
+            v_annotations = annotations[1].get(conv_part)
+            d_annotations = annotations[2].get(conv_part)
+            for anno in a_annotations:
+                pp = os.path.join(arouse_path, anno)
+                df = pd.read_csv(pp, header=8, names=['time', 'arousal'])
+                df = df[(start <= df['time']) & (df['time'] <= end)]
+                if df.empty:
+                    continue
+                arousal_temp.append(df['arousal'].mean())
+            for anno in v_annotations:
+                pp = os.path.join(valence_path, anno)
+                df = pd.read_csv(pp, header=8, names=['time', 'valence'])
+                df = df[(start <= df['time']) & (df['time'] <= end)]
+                if df.empty:
+                    continue
+                valence_temp.append(df['valence'].mean())
+            for anno in d_annotations:
+                pp = os.path.join(dominance_path, anno)
+                df = pd.read_csv(pp, header=8, names=['time', 'dominance'])
+                if anno == 'MSP-Conversation_0047_2_001.csv':
+                    df = df.reset_index()
+                    df = df.drop(columns=['dominance'])
+                    df.columns = ['time', 'dominance']
+                df = df[(start <= df['time']) & (df['time'] <= end)]
+                if df.empty:
+                    continue
+                dominance_temp.append(df['dominance'].mean())
+            arousal.append(np.mean(arousal_temp))
+            valence.append(np.mean(valence_temp))
+            dominance.append(np.mean(dominance_temp))
+
+        df_dict = {'file': files, 'arousal': arousal, 'valence': valence, 'dominance':dominance}
+        annos = pd.DataFrame.from_dict(df_dict)
+        annos.to_csv(labels_path+partition+'_labels.csv')
+
+
+def get_annotations(data_phase=None):
+    train_files, validation_files, test_files = file_labels()
+
     annotations = []
     emotion_paths = []
     emotion_paths.append(arouse_path)
@@ -138,8 +210,7 @@ def get_annotations(data_phase='train'):
     elif data_phase == 'test':
         data_file = test_files
     else:
-        print('Invalid argument')
-        return
+        data_file = train_files + validation_files + test_files
 
     for path in emotion_paths:
         annotation = {}

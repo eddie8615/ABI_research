@@ -27,10 +27,8 @@ def main():
         os.mkdir(output_path)
     if not os.path.exists(label_output_path):
         os.mkdir(label_output_path)
-    # load_features()
-    loaded = np.loadtxt('../Functional_features/train.txt')
-    loaded = loaded.reshape((25253, 399, 25))
-    print(loaded[0])
+    train, validation, test = load_features()
+    print(train.shape)
 
 
 def load_features():

@@ -94,9 +94,9 @@ def file_labels():
         if text[1] == 'Test':
             test_files.append(text[0])
     f.close()
-    print('Number of training labels: ' + str(len(train_files)))
-    print('Number of validation labels: ' + str(len(validation_files)))
-    print('Number of testing labels: ' + str(len(test_files)))
+    # print('Number of training labels: ' + str(len(train_files)))
+    # print('Number of validation labels: ' + str(len(validation_files)))
+    # print('Number of testing labels: ' + str(len(test_files)))
 
     return [train_files, validation_files, test_files]
 
