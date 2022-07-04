@@ -15,8 +15,9 @@ arouse_path = os.path.relpath('../MSP Data/Annotations/Arousal')
 dominance_path = os.path.relpath('../MSP Data/Annotations/Dominance')
 valence_path = os.path.relpath('../MSP Data/Annotations/Valence')
 
-output_path = '../Functional_features/'
-label_output_path = '../Functional_features/labels/'
+output_path = '../Data/'
+# output_path = '../temp/'
+label_output_path = '../Data/labels/'
 
 sections = ['train', 'validation', 'test']
 dimensions = ['Arousal', 'Valence', 'Dominance']
@@ -50,6 +51,8 @@ def load_features():
         arousal_label = []
         valence_label = []
         dominance_label = []
+        filenames = []
+        intervals = []
 
         # Fetch all files
         files = fnmatch.filter(os.listdir(folder_lld_features[i]), '*.csv')
@@ -67,11 +70,14 @@ def load_features():
                 if end > last_timestamp:
                     end = last_timestamp
 
-                features.append(get_features(start, end, x))
-                # arousal, valence, dominance = get_labels(start, end, annotations, file)
-                # arousal_label.append(arousal)
-                # valence_label.append(valence)
-                # dominance_label.append(dominance)
+                # features.append(get_features(start, end, x))
+                # Processing labels
+                arousal, valence, dominance = get_labels(start, end, annotations, file)
+                filenames.append(file.split()[0])
+                intervals.append(str(start) +'-'+str(end))
+                arousal_label.append(arousal)
+                valence_label.append(valence)
+                dominance_label.append(dominance)
                 # print(window)
         if i == 0:
             train = features
@@ -79,22 +85,15 @@ def load_features():
             validation = features
         else:
             test = features
-    print('Train shape:', train.shape)
-    print('Validation shape:', validation.shape)
-    print('Test shape:', test.shape)
 
-    return train, validation, test
-
-        # Generate features just in case
-        # save_features(np.asarray(features), output_path + sections[i] + '.txt')
-        # di = {'Arousal': arousal_label, 'Valence': valence_label, 'Dominance': dominance_label}
-        # df = pd.DataFrame(di)
+        # Save the labels
+        di = {'Filename': filenames, 'Time': intervals, 'Arousal': arousal_label, 'Valence': valence_label, 'Dominance': dominance_label}
+        df = pd.DataFrame(di)
 
         # Generate the labels
-        # save_labels(df, output_path + sections[i] + '_labels.txt')
-#         TODO rather than saving the extracted features in csv file, this function will be modified to return extracted features when called, but will keep label values as csv file.
-# Later, this function is called to load features to train RNN-LSTM, and labels will be loaded through saved csv file
-#
+        save_labels(df, output_path + sections[i] + '_labels.txt')
+
+    return train, validation, test
 
 
 def save_features(features, output_path):
