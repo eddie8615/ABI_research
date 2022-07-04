@@ -1,6 +1,7 @@
 import json
 import os
 from pydub import AudioSegment
+from tqdm import tqdm
 import pandas as pd
 
 train_path = os.path.relpath('../Data/train')
@@ -21,7 +22,7 @@ def audio_segment(labels):
     f = open(path, 'r')
     timing_data = json.load(f)
 
-    for key in timing_data:
+    for key in tqdm(timing_data):
         start_time = timing_data[key]['Start_Time'] * 1000
         end_time = timing_data[key]['End_Time'] * 1000
 
