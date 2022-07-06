@@ -15,8 +15,8 @@ arouse_path = os.path.relpath('../MSP Data/Annotations/Arousal')
 dominance_path = os.path.relpath('../MSP Data/Annotations/Dominance')
 valence_path = os.path.relpath('../MSP Data/Annotations/Valence')
 
-# output_path = '../Data/'
-output_path = '../temp/'
+output_path = '../Data/'
+# output_path = '../temp/'
 label_output_path = '../Data/labels/'
 
 sections = ['train', 'validation', 'test']
@@ -29,7 +29,6 @@ def main():
     if not os.path.exists(label_output_path):
         os.mkdir(label_output_path)
     train, validation, test = load_features()
-
 
 
 def load_features():
