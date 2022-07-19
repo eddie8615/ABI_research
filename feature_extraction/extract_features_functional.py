@@ -2,9 +2,9 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from audio_crop import file_labels
+import fnmatch
 from tqdm import tqdm
-import opensmile
+# import opensmile
 
 
 # save paths
@@ -16,185 +16,31 @@ validation_path = os.path.relpath('../Data/validation')
 test_path = os.path.relpath('../Data/test')
 data_path = os.path.relpath('../Data')
 
-labels_path = '../Data/Labels/'
+window_size = 4.0
+fps = 100
+n_features = 25
+
+window_size_half = int(window_size * fps / 2)
+hop_size = 0.5
+seq_len = 400
+max_time = 193.62
+max_seq_len = int(max_time / hop_size) + 1
+min_time = 1.0
+folder_lld_features = ['../LLDs/train/',
+                   '../LLDs/validation/',
+                   '../LLDs/test/']
+sections = ['train', 'validation', 'test']
+dimensions = ['Arousal', 'Valence', 'Dominance']
+output_path = '../Functional_features/'
+
 def main():
+    # output_path = '../Data/'
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
 
-    smile = opensmile.Smile(
-        feature_set=opensmile.FeatureSet.eGeMAPSv02,
-        feature_level=opensmile.FeatureLevel.Functionals,
-        num_workers=4
-    )
-    if not os.path.exists(labels_path):
-        os.mkdir(labels_path)
+    extract_features()
 
-    annotations = get_annotations()
-    extract_labels(annotations)
-
-    # extract_features(smile, annotations, 'train')
-
-    # annotations = get_annotations('validation')
-
-    # extract_features(smile, annotations, 'validation')
-    # annotations = get_annotations('test')
-    # extract_features(smile, annotations, 'test')
-
-
-def extract_features(smile, annotations, phase=None):
-    file_paths = []
-    offset_index = 0
-    if phase is None:
-        return
-    if phase == 'train':
-        audio_file_path = train_path
-        save_file = 'train.csv'
-        offset_index = 11
-    elif phase == 'test':
-        audio_file_path = test_path
-        save_file = 'test.csv'
-        offset_index = 10
-    elif phase == 'validation':
-        audio_file_path = validation_path
-        save_file = 'validation.csv'
-        offset_index = 16
-    else:
-        print("Unknown phase called, terminated")
-
-    for file in os.listdir(audio_file_path):
-        file_paths.append(os.path.join(audio_file_path, file))
-    # Extract acoustic features using opensmile
-    data = smile.process_files(file_paths)
-
-#     Indices in extracted dataframe were multi-index format.
-#     Make them into single index format and the indices are the name of audio files
-    data = data.reset_index(level=[1, 2])
-#     drop nan
-    data = data.dropna()
-    # Replace indices from file path to file name
-    indices = []
-    for index in data.index:
-        indices.append(index[offset_index:offset_index+21])
-
-    data['podcast'] = indices
-    data = data.set_index('podcast')
-    segment_path = os.path.relpath('../MSP Data/Time Labels/segments.json')
-    f = open(segment_path, 'r')
-    timing_data = json.load(f)
-    for key in timing_data:
-        conv_part = timing_data[key]['Conversation_Part']
-        if key not in data.index:
-            continue
-        start = timing_data[key]['Start_Time']
-        end = timing_data[key]['End_Time']
-        arousal = []
-        valence = []
-        dominance = []
-        a_annotations = annotations[0].get(conv_part)
-        v_annotations = annotations[1].get(conv_part)
-        d_annotations = annotations[2].get(conv_part)
-        for anno in a_annotations:
-            pp = os.path.join(arouse_path, anno)
-            df = pd.read_csv(pp, header=8, names=['time', 'arousal'])
-            df = df[(start <= df['time']) & (df['time'] <= end)]
-            if df.empty:
-                continue
-            arousal.append(df['arousal'].mean())
-        for anno in v_annotations:
-            pp = os.path.join(valence_path, anno)
-            df = pd.read_csv(pp, header=8, names=['time', 'valence'])
-            df = df[(start <= df['time']) & (df['time'] <= end)]
-            if df.empty:
-                continue
-            valence.append(df['valence'].mean())
-        for anno in d_annotations:
-            pp = os.path.join(dominance_path, anno)
-            df = pd.read_csv(pp, header=8, names=['time', 'dominance'])
-            if anno == 'MSP-Conversation_0047_2_001.csv':
-                df = df.reset_index()
-                df = df.drop(columns=['dominance'])
-                df.columns = ['time', 'dominance']
-            df = df[(start <= df['time']) & (df['time'] <= end)]
-            if df.empty:
-                continue
-            dominance.append(df['dominance'].mean())
-
-        score_arousal = mean(arousal)
-        score_valence = mean(valence)
-        score_dominance = mean(dominance)
-        data.loc[key, 'arousal'] = score_arousal
-        data.loc[key, 'valence'] = score_valence
-        data.loc[key, 'dominance'] = score_dominance
-    if len(data[data.isnull().any(axis=1)]) != 0:
-        print("Null values included, cannot export to csv file")
-        print(data)
-        return
-    data.to_csv(os.path.join(data_path, save_file))
-    print('Successfully saved ', save_file)
-    print('Data dimension: ', data.shape)
-
-
-def extract_labels(annotations):
-    segment_path = os.path.relpath('../MSP Data/Time Labels/segments.json')
-    f = open(segment_path, 'r')
-    timing_data = json.load(f)
-    train_files, validation_files, test_files = file_labels()
-    partitions = {'train': train_files, 'validation': validation_files, 'test': test_files}
-
-    for partition in partitions:
-        partition_files = partitions.get(partition)
-        files = []
-        arousal = []
-        valence = []
-        dominance = []
-        for key in tqdm(timing_data):
-            conv_part = timing_data[key]['Conversation_Part']
-            start = timing_data[key]['Start_Time']
-            end = timing_data[key]['End_Time']
-
-            if start == end or conv_part[:21] not in partition_files:
-                continue
-
-            arousal_temp = []
-            valence_temp = []
-            dominance_temp = []
-            files.append(key)
-
-            a_annotations = annotations[0].get(conv_part)
-            v_annotations = annotations[1].get(conv_part)
-            d_annotations = annotations[2].get(conv_part)
-            for anno in a_annotations:
-                pp = os.path.join(arouse_path, anno)
-                df = pd.read_csv(pp, header=8, names=['time', 'arousal'])
-                df = df[(start <= df['time']) & (df['time'] <= end)]
-                if df.empty:
-                    continue
-                arousal_temp.append(df['arousal'].mean())
-            for anno in v_annotations:
-                pp = os.path.join(valence_path, anno)
-                df = pd.read_csv(pp, header=8, names=['time', 'valence'])
-                df = df[(start <= df['time']) & (df['time'] <= end)]
-                if df.empty:
-                    continue
-                valence_temp.append(df['valence'].mean())
-            for anno in d_annotations:
-                pp = os.path.join(dominance_path, anno)
-                df = pd.read_csv(pp, header=8, names=['time', 'dominance'])
-                if anno == 'MSP-Conversation_0047_2_001.csv':
-                    df = df.reset_index()
-                    df = df.drop(columns=['dominance'])
-                    df.columns = ['time', 'dominance']
-                df = df[(start <= df['time']) & (df['time'] <= end)]
-                if df.empty:
-                    continue
-                dominance_temp.append(df['dominance'].mean())
-            arousal.append(np.mean(arousal_temp))
-            valence.append(np.mean(valence_temp))
-            dominance.append(np.mean(dominance_temp))
-
-        df_dict = {'file': files, 'arousal': arousal, 'valence': valence, 'dominance':dominance}
-        annos = pd.DataFrame.from_dict(df_dict)
-        annos.to_csv(labels_path+partition+'_labels.csv')
-
-
+    
 def get_annotations(data_phase=None):
     train_files, validation_files, test_files = file_labels()
 
@@ -228,10 +74,213 @@ def get_annotations(data_phase=None):
         annotations.append(annotation)
     return annotations
 
+def load_annotation_df(annotations, file_part):
+    a_annotations = annotations[0].get(file_part)
+    v_annotations = annotations[1].get(file_part)
+    d_annotations = annotations[2].get(file_part)
+    df_arousal = []
+    df_valence = []
+    df_dominance = []
+    for anno in a_annotations:
+        pp = os.path.join(arouse_path, anno)
+        df = pd.read_csv(pp, header=8, names=['time', 'arousal'])
+        df_arousal.append(df)
 
-def mean(list):
-    return sum(list) / len(list)
+    for anno in v_annotations:
+        pp = os.path.join(valence_path, anno)
+        df = pd.read_csv(pp, header=8, names=['time', 'valence'])
+        df_valence.append(df)
 
+    for anno in d_annotations:
+        pp = os.path.join(dominance_path, anno)
+        df = pd.read_csv(pp, header=8, names=['time', 'dominance'])
+        if anno == 'MSP-Conversation_0047_2_001.csv':
+            df = df.reset_index()
+            df = df.drop(columns=['dominance'])
+            df.columns = ['time', 'dominance']
+        df_dominance.append(df)
+
+    return df_arousal, df_valence, df_dominance
+
+
+def convert_timestamp(x):
+    # eGeMAPS configurations
+    # time unit: sec
+    # sample length: 20ms (0.02s)
+    # hop_size: 10ms (0.01s)
+    window_size = 0.02
+    hop_size = 0.01
+    for i in range(len(x)):
+        x.iloc[i, 0] = i * hop_size
+        x.iloc[i, 1] = x.iloc[i, 0] + window_size
+        
+    return x
+
+def save_features(features, output_path):
+    with open(output_path, 'w') as outfile:
+        for slice_2d in features:
+            np.savetxt(outfile, slice_2d)
+
+
+def save_labels(labels, output_path):
+    labels.to_csv(output_path)
+    
+    
+def extract_features():
+    segment_path = os.path.relpath('../MSP Data/Time Labels/segments.json')
+    f = open(segment_path, 'r')
+    timing_data = json.load(f)
+
+    max_time = 0
+    for key in timing_data:
+        start = timing_data[key]['Start_Time']
+        end = timing_data[key]['End_Time']
+        max_time = max(max_time, end-start)
+    
+    for i, folder in enumerate(folder_lld_features):
+
+        arousal_label = []
+        valence_label = []
+        dominance_label = []
+        filenames = []
+        intervals = []
+
+        features = []
+        labels = []
+        train = []
+        validation = []
+        test = []
+
+        annotations = get_annotations(sections[i])
+        files = fnmatch.filter(os.listdir(folder_lld_features[i]), '*.csv')
+        files.sort()
+
+        for file in tqdm(files):
+            inst = file.split('.')[0]        
+            if 'MSP-PODCAST_0153' in inst or 'MSP-PODCAST_1188_0020' in inst:
+                continue
+            file_part = timing_data[inst]['Conversation_Part']
+            start_offset = timing_data[inst]['Start_Time']
+            end_time = timing_data[inst]['End_Time']
+            duration = end_time - start_offset
+            if duration < min_time:
+                continue
+            # load annotations in Dataframe
+            df_arousal, df_valence, df_dominance = load_annotation_df(annotations, file_part)
+
+            x_func = np.zeros((max_seq_len, n_features * 2))
+            labels_seq = np.zeros((max_seq_len, 3))
+            x = pd.read_csv(folder_lld_features[i] + file)
+            x = convert_timestamp(x)
+
+            time_stampes_new = np.empty((max_seq_len, 1))
+            for t in range(0, max_seq_len):
+                arousal = []
+                valence = []
+                dominance = []
+
+                t_orig = int(t * fps * hop_size)
+                min_orig = max(0, t_orig-window_size_half)
+                max_orig = min(x.shape[0], t_orig+window_size_half)
+                start = min_orig / fps
+                end = max_orig / fps
+
+                if min_orig<max_orig and t_orig<=x.shape[0]:
+
+                    x_func[t, :n_features] = np.mean(x.iloc[min_orig:max_orig, 2:], axis=0)
+                    x_func[t, n_features:] = np.std(x.iloc[min_orig:max_orig, 2:], axis=0)
+    #                 x_lld = x.iloc[min_orig:max_orig,2:]
+    #                 time_stamps_new[:len(x_lld),:] = x_lld
+    #                 features.append(time_stamps_new)
+                    for df in df_arousal:
+                        df = df[(start + start_offset <= df['time']) & (df['time'] <= start_offset + end)]
+                        if df.empty:
+                            continue
+                        arousal.append(df['arousal'].mean())
+                    for df in df_valence:
+                        df = df[(start + start_offset <= df['time']) & (df['time'] <= start_offset + end)]
+                        if df.empty:
+                            continue
+                        valence.append(df['valence'].mean())
+                    for df in df_dominance:
+                        df = df[(start + start_offset <= df['time']) & (df['time'] <= start_offset + end)]
+                        if df.empty:
+                            continue
+                        dominance.append(df['dominance'].mean())
+                    filenames.append(file.split('.')[0])
+                    intervals.append(str(start) +'-'+str(end))
+                    if len(arousal) == 0:
+                        arousal = 0
+                    arousal = np.mean(arousal)
+                    labels_seq[t, 0] = arousal
+    #                 arousal_label.append(arousal)
+                    if len(valence) == 0:
+                        valence = 0
+                    valence = np.mean(valence)
+                    labels_seq[t, 1] = valence
+    #                 valence_label.append(valence)
+                    if len(dominance) == 0:
+                        dominance = 0
+                    dominance = np.mean(dominance)
+                    labels_seq[t, 2] = dominance
+    #                 dominance_label.append(dominance)
+
+                else:
+                    x_func = x_func[:t,:]                
+                    x_func = np.concatenate((x_func, np.zeros((max_seq_len - x_func.shape[0], x_func.shape[1]))))
+                    labels_seq = np.concatenate((labels_seq, np.zeros((max_seq_len- labels_seq.shape[0], 3))))
+                    break
+
+            features.append(x_func)
+            labels.append(labels_seq)
+
+
+            # Save the features
+        if i == 0:
+            train = features
+            print('Train samples: %d' % (len(train)))
+            save_features(train, output_path + sections[i] + '.txt')
+        elif i == 1:
+            validation = features
+            print('Validation samples: %d' % (len(validation)))
+            save_features(validation, output_path + sections[i] + '.txt')
+        else:
+            test = features
+            print('Test samples: %d' % (len(test)))
+            save_features(test, output_path + sections[i] + '.txt')
+
+        # Save the labels
+    #     di = {'Filename': filenames, 'Time': intervals, 'Arousal': arousal_label, 'Valence': valence_label, 'Dominance': dominance_label}
+    #     df = pd.DataFrame(di)
+    #     print('%s labels length: %d ' % (sections[i], len(df)))
+        #
+        # # Generate the labels
+        save_features(labels, output_path + sections[i] + '_labels.txt')
+
+
+def file_labels():
+    filepath = os.path.relpath('../MSP Data/partitions.txt')
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+
+    train_files = []
+    validation_files = []
+    test_files = []
+
+    for line in lines:
+        text = line.strip().split(';')
+        if text[1] == 'Train':
+            train_files.append(text[0])
+        if text[1] == 'Validation':
+            validation_files.append(text[0])
+        if text[1] == 'Test':
+            test_files.append(text[0])
+    f.close()
+    # print('Number of training labels: ' + str(len(train_files)))
+    # print('Number of validation labels: ' + str(len(validation_files)))
+    # print('Number of testing labels: ' + str(len(test_files)))
+
+    return [train_files, validation_files, test_files]
 
 if __name__ == '__main__':
     main()
