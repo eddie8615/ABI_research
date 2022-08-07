@@ -15,7 +15,7 @@ validation_write_path = os.path.relpath('../transcripts/validation')
 failed_path = os.path.relpath('../failed.txt')
 save_path = os.path.relpath('..')
 bucket_name = 'msc_research'
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/changhyun/workspace/ABI_research/config/config.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/changhyun/workspace/ABI_research/config/config3.json"
 
 
 def main():

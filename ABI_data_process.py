@@ -11,7 +11,12 @@ data_path = './ABI_data/Audios/'
 diary_path = data_path + 'diarization/'
 if not os.path.exists(diary_path):
     os.mkdir(diary_path)
-series = sorted(os.listdir(data_path))
+# series = sorted(os.listdir(data_path))
+with open(data_path+'completed.txt', 'r') as f:
+    lines = f.readlines()
+    series = []
+    for line in lines:
+        series.append(line.strip('\n'))
 
 min_duration = 0.5  # 500ms
 for podcast in series:
@@ -22,6 +27,7 @@ for podcast in series:
         os.mkdir(output_path)
 
     count = 1
+    print('Processing %s' % podcast)
     for file in tqdm(files):
         inst = file.split('.')[0]
         diarization = pipeline(data_path + podcast + '/' + file)

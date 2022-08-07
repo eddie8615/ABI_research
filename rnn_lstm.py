@@ -41,7 +41,6 @@ n_features = 25
 random_seed = 42
 
 epochs = 20
-batch_size = 4
 embedding_dim = 300
 dropout = 0.3
 learning_rate = 0.0001
@@ -63,6 +62,7 @@ def main():
     global val_length
     global test_length
     global seq_len
+    global batch_size
 
     if args.sentence == 'y' or args.sentence == 'yes':
         sentence_level = True
@@ -70,6 +70,7 @@ def main():
         train_length = 2684
         val_length = 726
         test_length = 1498
+        batch_size = 32
 
     elif args.sentence == 'n' or args.sentence == 'no':
         sentence_level = False
@@ -77,6 +78,7 @@ def main():
         train_length = 96
         val_length = 30
         test_length = 44
+        batch_size = 4
 
     else:
         print('Invalid argument')
@@ -162,8 +164,11 @@ def main():
             print('Arousal CCC: %.4f' % arousal_ccc)
             print('Valence CCC: %.4f' % valence_ccc)
             print('Dominance CCC: %.4f' % dominance_ccc)
-            model_name = './checkpoints/lstm-' + mode
-            model.save_weights(model_name, save_format='tf')
+            if mode == 'latefusion':
+                model_name = './late_fusion/lstm-' + mode
+            else:
+                model_name = './hfusion/lstm-' + mode
+            model.save(model_name, save_format='tf')
         else:
             early_stop -= 1
 
@@ -342,7 +347,7 @@ def transform_mtl(y):
 
 def sentence_transcripts(timing_data):
     for i, section in enumerate(sections):
-        files = fnmatch.filter(os.listdir(data_path + section), '*.txt')
+        files = fnmatch.filter(os.listdir(data_path +'transcripts/' + section), '*.txt')
         files.sort()
         text = []
         filename = []
@@ -356,7 +361,7 @@ def sentence_transcripts(timing_data):
             if end - start < min_time:
                 continue
             filename.append(inst)
-            with open(data_path + section + file) as f:
+            with open(data_path + 'transcripts/' + section + file) as f:
                 lines = f.readlines()
             if len(lines) == 0:
                 text.append('')
